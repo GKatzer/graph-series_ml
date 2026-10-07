@@ -1,0 +1,33 @@
+[Unit]
+Description=TV Series Knowledge Graph — VDS2 (Search & Frontend)
+Documentation=https://github.com/yourname/tv-series-knowledge-graph
+After=network-online.target docker.service tailscaled.service
+Wants=network-online.target
+Requires=docker.service
+
+[Service]
+Type=oneshot
+RemainAfterExit=yes
+
+WorkingDirectory=/home/graph_series_ml/vds2
+
+# Запуск
+ExecStart=/usr/bin/docker compose up -d --remove-orphans
+
+# Остановка
+ExecStop=/usr/bin/docker compose down
+
+# Перезагрузка (применяется caddy reload без даунтайма)
+ExecReload=/usr/bin/docker compose exec -T caddy caddy reload \
+    --config /etc/caddy/Caddyfile --adapter caddyfile
+
+TimeoutStartSec=120
+TimeoutStopSec=30
+
+# Логи через journald
+StandardOutput=journal
+StandardError=journal
+SyslogIdentifier=tvkg-vds2
+
+[Install]
+WantedBy=multi-user.target

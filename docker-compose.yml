@@ -1,0 +1,101 @@
+version: "3.9"
+
+# ============================================================
+#  VDS2 — Search & Frontend layer
+#  Сервисы: Qdrant (векторный поиск) + Next.js (фронтенд) + Caddy (TLS proxy)
+# ============================================================
+
+services:
+
+  # ─────────────────────────────────────────────
+  # Qdrant — векторная БД
+  # ─────────────────────────────────────────────
+  qdrant:
+    image: qdrant/qdrant:v1.9.2
+    container_name: qdrant
+    restart: unless-stopped
+    environment:
+      QDRANT__SERVICE__HTTP_PORT: 6333
+      QDRANT__SERVICE__GRPC_PORT: 6334
+      # Scalar quantization включается при создании коллекции,
+      # здесь включаем телеметрию off
+      QDRANT__TELEMETRY_DISABLED: "true"
+      # Снимок на диск каждые 5 минут
+      QDRANT__STORAGE__SNAPSHOTS_PATH: /qdrant/snapshots
+    volumes:
+      - qdrant_data:/qdrant/storage
+      - qdrant_snapshots:/qdrant/snapshots
+    # Qdrant слушает только внутри Docker-сети.
+    # Tailscale-доступ реализован через хост (network_mode: host не нужен —
+    # Tailscale-интерфейс доступен с хоста, порт проброшен через expose+iptables).
+    # Для доступа с десктопа/VDS1 по Tailscale порт 6333 открыт на хосте:
+    ports:
+      - "${PRIVATE_BIND_IP:?set PRIVATE_BIND_IP in .env}:6333:6333"   # HTTP API — только localhost (Tailscale слушает на хосте)
+      - "${PRIVATE_BIND_IP:?set PRIVATE_BIND_IP in .env}:6334:6334"   # gRPC
+    expose:
+      - "6333"
+      - "6334"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:6333/healthz"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 20s
+
+  # ─────────────────────────────────────────────
+  # Next.js — production build (standalone)
+  # ─────────────────────────────────────────────
+  nextjs:
+    build:
+      context: ./nextjs
+      dockerfile: Dockerfile
+      args:
+        # API проксируется через Caddy на этом же VDS2: /api/backend/* → VDS1
+        NEXT_PUBLIC_API_URL: "/api/backend"
+    container_name: nextjs
+    restart: unless-stopped
+    mem_limit: 512m
+    cpus: 1.0
+    environment:
+      NODE_ENV: production
+      PORT: 3000
+      NODE_OPTIONS: "--max-old-space-size=384"
+    ports:
+      - "127.0.0.1:3001:3000"
+    expose:
+      - "3000"
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:3000/api/healthz"]
+      interval: 20s
+      timeout: 5s
+      retries: 3
+      start_period: 30s
+
+  inference:
+    build:
+      context: ./inference
+      dockerfile: Dockerfile
+    container_name: tvkg-inference
+    restart: unless-stopped
+    ports:
+      - "${PRIVATE_BIND_IP:?set PRIVATE_BIND_IP in .env}:8004:8000"   # Tailscale only
+    networks:
+      - internal
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8000/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 3
+      start_period: 60s
+
+networks:
+  internal:
+    driver: bridge
+
+volumes:
+  qdrant_data:
+  qdrant_snapshots:

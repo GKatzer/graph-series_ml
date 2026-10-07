@@ -1,0 +1,16 @@
+# GET responses from the public deployment, 2026-10-04 ~15:00 (local time); read-only requests
+
+$ curl -s -w '\n%{http_code}\n' '<site>/api/backend/api/search?q=breaking%20bad&mode=structural&limit=3'
+Internal Server Error
+500
+
+$ curl -s -w '\n%{http_code}\n' '<site>/api/backend/api/search/persons?q=cranston&limit=3'
+Internal Server Error
+500
+
+$ curl -s -w '\n%{http_code}\n' '<site>/api/backend/api/search?q=a&mode=structural&limit=3'
+{"detail":[{"type":"string_too_short","loc":["query","q"],"msg":"String should have at least 2 characters","input":"a","ctx":{"min_length":2}}]}
+422
+
+$ curl -s -o /dev/null -w '%{http_code}\n' <site>/api/healthz
+404

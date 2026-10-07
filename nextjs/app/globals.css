@@ -1,0 +1,24 @@
+/* app/globals.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+:root {
+  --accent: 139 92 246; /* violet-500 */
+}
+
+::selection {
+  background: rgb(var(--accent) / 0.3);
+}
+
+/* Scrollbar */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: rgb(71 85 105); border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: rgb(100 116 139); }
+
+/* Smooth focus */
+* { outline-color: rgb(var(--accent)); }
+
+/* Graph canvas background */
+.graph-canvas canvas { border-radius: 0.5rem; }

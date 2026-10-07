@@ -1,0 +1,13 @@
+{
+  "nodes": 66,
+  "edges": 67,
+  "by_label": {
+    "Country": 1,
+    "Genre": 2,
+    "Keyword": 29,
+    "Language": 3,
+    "Network": 1,
+    "Person": 29,
+    "Series": 1
+  }
+}

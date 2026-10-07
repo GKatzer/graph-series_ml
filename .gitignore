@@ -1,0 +1,10 @@
+.env
+
+node_modules/
+nextjs/.next/
+nextjs/out/
+nextjs/tsconfig.tsbuildinfo
+
+.claude/settings.local.json
+__pycache__/
+.pytest_cache/
